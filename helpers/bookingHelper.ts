@@ -1,11 +1,11 @@
 import axios from 'axios';
-import apiData from '../api-data.json' with { type: 'json' };
+import * as dotenv from 'dotenv';
 
-const jsonData = { ...apiData } as any;
+dotenv.config();
 
 export async function getBookingId(): Promise<number> {
   try {
-    const bookingsResponse = await axios.get(`${jsonData.baseURL}/booking?firstname=John&lastname=Smith`);
+    const bookingsResponse = await axios.get(`${process.env.BASE_URL}/booking?firstname=John&lastname=Smith`);
     
     if (bookingsResponse.data.length === 0) {
       throw new Error('No bookings found');

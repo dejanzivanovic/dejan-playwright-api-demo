@@ -1,6 +1,8 @@
 import { test as base, expect } from '@playwright/test';
 import axios, { AxiosResponse, AxiosInstance } from 'axios';
-import apiData from '../api-data.json' with { type: 'json' };
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 
 export interface AuthFixture {
@@ -11,9 +13,9 @@ export interface AuthFixture {
 export const test = base.extend<AuthFixture>({
   authToken: async ({}, use) => {
     try {
-      const response: AxiosResponse = await axios.post(`${apiData.baseURL}/auth`, {
-        username: apiData.username,
-        password: apiData.password
+      const response: AxiosResponse = await axios.post(`${process.env.BASE_URL}/auth`, {
+        username: process.env.API_USERNAME,
+        password: process.env.PASSWORD
       }, {
         headers: { 'Accept': 'application/json' }
       });
@@ -29,7 +31,7 @@ export const test = base.extend<AuthFixture>({
   
   api: async ({ authToken }, use) => {
     const authenticatedApi = axios.create({
-      baseURL: apiData.baseURL,
+      baseURL: process.env.BASE_URL,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
