@@ -1,6 +1,4 @@
 import { test, expect } from '../fixtures/auth.fixture';
-import axios, { AxiosInstance } from 'axios';
-import apiData from '../api-data.json' with { type: 'json' };
 import { getBookingId } from '../helpers/bookingHelper';
 
 let booking_id: number;

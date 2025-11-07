@@ -1,7 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 import axios, { AxiosResponse, AxiosInstance } from 'axios';
 import apiData from '../api-data.json' with { type: 'json' };
-import fs from 'fs-extra';
+
 
 export interface AuthFixture {
   authToken: string;
@@ -21,11 +21,7 @@ export const test = base.extend<AuthFixture>({
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('token');
       
-      const token = response.data.token;
-      const updatedData = { ...apiData, token };
-      fs.writeJSONSync("api-data.json", updatedData);
-      
-      await use(token);
+      await use(response.data.token);
     } catch (error) {
       throw new Error(`Authentication failed: ${error}`);
     }
