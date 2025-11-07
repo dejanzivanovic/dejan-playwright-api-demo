@@ -1,99 +1,58 @@
-import { test, expect } from '@playwright/test';
-import axios from 'axios';
-import apiData from '../api-data.json';
-import fs from "fs-extra";
+import { test, expect } from '../fixtures/auth.fixture';
+import axios, { AxiosInstance } from 'axios';
+import apiData from '../api-data.json' with { type: 'json' };
 import { getBookingId } from '../helpers/bookingHelper';
-import { describe } from 'node:test';
 
-const jsonData = { ...apiData } as any;
-let booking_id:number;
+let booking_id: number;
 
 test.describe.serial('API flow', () => {
 
-test('Authenticate', async () => {
 
+test('Get first booking details', async ({ api }) => {
+  try {
+    booking_id = await getBookingId();
+    const response = await api.get(`/booking/${booking_id}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.data).toHaveProperty('firstname');
+    expect(response.data).toHaveProperty('lastname');
+    
+  } catch (error) {
+    throw new Error(`Failed to get booking details: ${error}`);
+  }
+});
 
-  const response = await axios.post(jsonData.baseURL+'/auth',
-    {
-      username: jsonData.username,
-      password: jsonData.password
-    },
-     {
-      headers: { 'Accept': 'application/json' }
-     }
-  ).then(function (response) {
+test('Update booking', async ({ api }) => {
+  try {
+    const response = await api.put(`/booking/${booking_id}`, {
+      firstname: "Dejan",
+      lastname: "Zivanovic",
+      totalprice: 132,
+      depositpaid: true,
+      bookingdates: {
+        checkin: "2025-01-01",
+        checkout: "2025-01-02"
+      },
+      additionalneeds: "Breakfast"
+      
+    });
+   
 
     expect(response.status).toBe(200);
-    expect(response.data).toHaveProperty('token');
-    const authToken = response.data.token;
-    console.log('Auth token:', authToken);
-    jsonData.token = authToken;
-    fs.writeJSONSync("api-data.json", jsonData);
-
-  })
-  .catch(function (error) {
-    console.log(error);
-  });;
-
+  } catch (error) {
+    throw new Error(`Failed to update booking: ${error}`);
+  }
 });
 
-
-test('Get first booking details', async () => {
-  
-  booking_id = await getBookingId();
-
-  const response = await axios.get(
-    jsonData.baseURL+`/booking/${booking_id}`,
-    {
-      headers: { 'Accept': 'application/json' }
-    }
-  );
-
-  console.log('Response data:', response.data);
-
-  expect(response.status).toBe(200);
-  expect(response.data).toHaveProperty('firstname');
-  expect(response.data).toHaveProperty('lastname');
-});
-
-test('Update booking', async () => {
-
-  booking_id = await getBookingId();
-
-  const response = await axios.put(jsonData.baseURL+`/booking/${booking_id}`,
-    {
-      firstname : "Dejan",
-      lastname : "Zivanovic",
-      totalprice : 132,
-      depositpaid : true,
-      bookingdates : {
-        checkin : "2025-01-01",
-        checkout : "2025-01-02"
-      },
-      additionalneeds : "Breakfast"
-    },
-     {
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json','Cookie': `token=${jsonData.token}` }
-      
-     }
-  );
-  console.log('Response data:', response.data);
-
-  expect(response.status).toBe(200);
-
-});
-
-test("Delete booking", async() => {
-
-  booking_id = await getBookingId();
-
-  const response = await axios.delete(jsonData.baseURL+`/booking/${booking_id}`,
-     {
-      headers: { 'Content-Type': 'application/json', 'Cookie': `token=${jsonData.token}` }
-     }
-  );
-  expect(response.status).toBe(201);
-
+test("Delete booking", async ({ api }) => {
+  try {
+    
+    const response = await api.delete(`/booking/${booking_id}`);
+    
+    expect(response.status).toBe(201);
+  } catch (error) {
+    throw new Error(`Failed to delete booking: ${error}`);
+  }
 });
 });
 
