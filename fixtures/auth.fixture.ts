@@ -1,46 +1,41 @@
-import { test as base, expect } from '@playwright/test';
-import axios, { AxiosResponse, AxiosInstance } from 'axios';
-import * as dotenv from 'dotenv';
+import { test as base, expect, APIRequestContext } from '@playwright/test';
 
-dotenv.config();
+const { BASE_URL, API_USERNAME, PASSWORD } = process.env;
 
-
-export interface AuthFixture {
-  authToken: string;
-  api: AxiosInstance;
+if (!BASE_URL || !API_USERNAME || !PASSWORD) {
+  throw new Error('Missing required environment variables: BASE_URL, API_USERNAME, PASSWORD');
 }
 
-export const test = base.extend<AuthFixture>({
-  authToken: async ({}, use) => {
-    try {
-      const response: AxiosResponse = await axios.post(`${process.env.BASE_URL}/auth`, {
-        username: process.env.API_USERNAME,
-        password: process.env.PASSWORD
-      }, {
-        headers: { 'Accept': 'application/json' }
-      });
+export interface ApiFixture {
+  api: APIRequestContext;
+}
 
-      expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('token');
-      
-      await use(response.data.token);
-    } catch (error) {
-      throw new Error(`Authentication failed: ${error}`);
-    }
-  },
-  
-  api: async ({ authToken }, use) => {
-    const authenticatedApi = axios.create({
-      baseURL: process.env.BASE_URL,
-      headers: {
+export const test = base.extend<ApiFixture>({
+  api: async ({ playwright }, use) => {
+    const authResponse = await playwright.request.newContext({ baseURL: BASE_URL });
+
+    const tokenRes = await authResponse.post('/auth', {
+      data: { username: API_USERNAME, password: PASSWORD },
+    });
+
+    expect(tokenRes.status()).toBe(200);
+    const { token } = await tokenRes.json();
+    expect(token).toBeTruthy();
+
+    await authResponse.dispose();
+
+    const api = await playwright.request.newContext({
+      baseURL: BASE_URL,
+      extraHTTPHeaders: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cookie': `token=${authToken}`
-      }
+        'Cookie': `token=${token}`,
+      },
     });
-    
-    await use(authenticatedApi);
-  }
+
+    await use(api);
+    await api.dispose();
+  },
 });
 
 export { expect };
